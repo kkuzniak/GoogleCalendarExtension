@@ -6,6 +6,7 @@ import { addMonths, endOfMonth, startOfMonth, subMonths } from 'date-fns';
 import { getNgrokUrl } from '../utils.js';
 import { isAuthenticated } from './authController.js';
 import { io } from '../app.js';
+import { upload } from '../services/s3.js';
 
 const googleCalendarRouter = express.Router();
 
@@ -228,5 +229,38 @@ googleCalendarRouter.route('/update').post(async (req, res) => {
     res.status(500).send('Error processing webhook');
   }
 });
+
+googleCalendarRouter
+  .route('/file')
+  .put(isAuthenticated, upload.single('file'), async (req, res) => {
+    const { id } = req.query;
+    const file = req.file;
+
+    try {
+      if (!id) {
+        return res.status(400).json({ error: 'No event id provided' });
+      }
+
+      if (!file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
+
+      const URL = file.location;
+
+      await prisma.calendarEvent.update({
+        where: { id },
+        data: {
+          fileURL: URL,
+        },
+      });
+
+      res
+        .status(200)
+        .json({ message: 'File added successfully', publicFileURL: URL });
+    } catch (error) {
+      console.error('Error adding file to event:', error);
+      res.status(500).json({ error: 'Error adding file to event' });
+    }
+  });
 
 export { googleCalendarRouter };

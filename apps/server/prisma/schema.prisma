@@ -1,0 +1,42 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String        @id @default(uuid())
+  email        String        @unique
+  accessToken  String        @unique
+  refreshToken String?
+  tokenExpiry  DateTime
+  createdAt    DateTime      @default(now()) @db.Timestamptz
+  updatedAt    DateTime      @updatedAt @db.Timestamptz
+  watchChannel WatchChannel?
+}
+
+model CalendarEvent {
+  id        String   @id @default(uuid())
+  status    String
+  title     String
+  organizer String
+  start     DateTime @db.Timestamptz
+  end       DateTime @db.Timestamptz
+  fileURL   String?
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+}
+
+model WatchChannel {
+  id         String   @id @default(uuid())
+  userId     String   @unique
+  user       User     @relation(fields: [userId], references: [id])
+  resourceId String   @unique
+  expiration DateTime @db.Timestamptz
+  month      DateTime @db.Timestamptz
+  createdAt  DateTime @default(now()) @db.Timestamptz
+  updatedAt  DateTime @updatedAt @db.Timestamptz
+}
